@@ -33,6 +33,8 @@ srv_gen/
 *.png
 *.jpg
 *.npz
+*.h5
+
 
 # qcreator stuff
 CMakeLists.txt.user
