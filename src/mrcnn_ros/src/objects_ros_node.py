@@ -46,11 +46,14 @@ from mrcnn_catkin import model as modellib, utils
 
 # ros modules
 import rospy
-from mrcnn_msgs.srv import FetchImage, MRCNNDetect, MRCNNDetectResponse
+from perception_msgs.srv import FetchImage, MRCNNDetect, MRCNNDetectResponse
+from perception_msgs.msg import Object2D
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
 DEFAULT_LOG_DIR = 'logs'
+HEIGHT = 480
+WIDTH = 640
 
 ############################################################
 #  Configurations
@@ -133,7 +136,8 @@ class MRCNN_OBJECT(object):
         self.model.load_weights(weights_path, by_name=True)
         self.graph = tf.get_default_graph()
 
-        self.SPLASH = True
+        self.VIS = True
+
         self.img_pub = rospy.Publisher('img_splash', Image, queue_size=10)
         self.bridge = CvBridge()
         self.img_client = rospy.ServiceProxy('fetch_image', FetchImage)
@@ -147,31 +151,39 @@ class MRCNN_OBJECT(object):
         # Convert ros image to cv image
         img_msg = self.img_client(int(1)).color
         cv_img = self.bridge.imgmsg_to_cv2(img_msg)
+        cv_img = cv_img[:,:,::-1]
 
         # Detect objects
         with self.graph.as_default():
-            r = self.model.detect([cv_img], verbose=1)[0]
+            r = self.model.detect([cv_img], verbose=0)[0]
         # Color splash
         #print (r)
 
-        if self.SPLASH == True:
-            splash = self.color_splash(cv_img, r)
-            #file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-            #skimage.io.imsave(file_name, splash)
+        #if self.SPLASH == True:
+        masks, rois, dists = self.color_splash(cv_img, r)
+        objects = []
+        res = MRCNNDetectResponse()
 
-            # publish image
-            img_msg = self.bridge.cv2_to_imgmsg(splash, 'rgb8')
-            img_msg.step = int(img_msg.step)
-            for i in range(10):
-                self.img_pub.publish(img_msg)
+        res = MRCNNDetectResponse()
+        h, w, num = masks.shape
+        print (num)
+        for i in range(num): 
+            obj = Object2D()
 
-            # Save output
-            #file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-            #skimage.io.imsave(file_name, splash)
-            #print("Saved to ", file_name)
+            (ys, xs) = np.nonzero(masks[:,:,i])
+            mask = [ys[j] * WIDTH + xs[j] for j in range(len(ys))]
+            roi = (rois[i]).tolist()
+            prob = (dists[i]).tolist()
 
-        return MRCNNDetectResponse(int(1))
+            obj.mask = mask
+            obj.roi = roi
+            obj.prob = prob
 
+            objects.append(obj)
+
+        res.objects = objects
+
+        return res
 
     def color_splash(self, image, result):
         """Apply color splash effect.
@@ -231,16 +243,12 @@ class MRCNN_OBJECT(object):
                 count += 1
 
         mask = np.asarray(mask_f, dtype=bool)
+        mask_return = mask.copy()
         rois = np.asarray(rois_f)
         types = np.asarray(types_f)
         scores = np.asarray(scores_f)
         distribution = np.asarray(dist_f)
         
-        print (scores)
-        print (distribution)
-        for d in distribution:
-            print (np.sum(d))
-    
         gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
         # Copy color pixels from the original color image where mask is set
         if mask.shape[-1] > 0:
@@ -258,7 +266,22 @@ class MRCNN_OBJECT(object):
     
         else:
             splash = gray.astype(np.uint8)
-        return splash
+        # publish image
+        if self.VIS:
+            img_msg = self.bridge.cv2_to_imgmsg(splash, 'bgr8')
+            img_msg.step = int(img_msg.step)
+            for i in range(10):
+                self.img_pub.publish(img_msg)
+            #file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+            #skimage.io.imsave(file_name, splash)
+            # Save output
+            #file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+            #skimage.io.imsave(file_name, splash)
+            #print("Saved to ", file_name)
+
+
+        return mask_return, rois, distribution
+
 
 
 if __name__ == '__main__':

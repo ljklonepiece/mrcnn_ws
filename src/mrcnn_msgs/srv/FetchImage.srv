@@ -1,5 +1,0 @@
-int32 request
-
----
-
-sensor_msgs/Image color
