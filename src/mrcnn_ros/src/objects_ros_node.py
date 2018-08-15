@@ -229,7 +229,7 @@ class MRCNN_OBJECT(object):
                 rect1 = (r1[2] - r1[0]) * (r1[3] - r1[1])
                 rect2 = (r2[2] - r2[0]) * (r2[3] - r2[1])
                 #overlap = (area / rect1 + area / rect2) * 0.5
-                overlap = min(area/rect1, area/rect2)
+                overlap = max(area/rect1, area/rect2)
 
                 #print ('-----')
                 #print (overlap)
