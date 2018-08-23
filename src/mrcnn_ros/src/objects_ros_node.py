@@ -210,6 +210,12 @@ class MRCNN_OBJECT(object):
         overlap_roi = []
 
         for i, r1 in enumerate(rois):
+            ## remove roi that is too small
+            area = (r1[2] - r1[0]) * (r1[3] - r1[1])
+            if area < 800:
+                print ('bbox is too SMALL')
+                overlap_roi.append(i)
+                continue
             ## if roi is too far away from the center of image, discard it
             if r1[0] < 100 or r1[0] > 400:
                 overlap_roi.append(i)
@@ -317,6 +323,7 @@ class MRCNN_OBJECT(object):
         types = np.asarray(types_f)
         scores = np.asarray(scores_f)
         distribution = np.asarray(dist_f)
+
         
         gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
         # Copy color pixels from the original color image where mask is set
@@ -327,6 +334,7 @@ class MRCNN_OBJECT(object):
     
             for i, r in enumerate(rois):
                 [y1, x1, y2, x2] = r
+                #print((y2-y1)*(x2-x1))
                 score = scores[i]
                 type = imap[types[i]]
                 cv2.rectangle(splash, (x1,y1), (x2,y2), (0,255,0), 2)

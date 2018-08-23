@@ -137,7 +137,8 @@ class Observation_Label(object):
         annotation = list(annotation.values())
         ## keep image with single object
         self.annotation = [a for a in annotation if len(a['regions']) == 1] 
-        self.occl_bin = 5
+        #self.occl_bin = 5
+        self.occl_bin = 10
         self.occl_inc = 1.0 / self.occl_bin
         self.occl_list = [i * self.occl_inc for i in range(self.occl_bin)]
         self.num_per_occl = 10
@@ -230,8 +231,8 @@ class Observation_Label(object):
                     
         print ('finished!')
 
-        with open('observation_model.json', 'w') as f:
-            json.dump(self.obs_dict, f)
+        with open('observation_model_10.json', 'w') as f:
+            json.dump(self.obs_dict, f, sort_keys=True, indent=4)
 
     def display(self, img):
         #from matplotlib import pyplot as plt
