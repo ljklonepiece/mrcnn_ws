@@ -129,7 +129,8 @@ class MRCNN_OBJECT(object):
                 model_dir=DEFAULT_LOG_DIR)
 
         # Select weights file to load
-        weights_path = 'weights/mrcnn_object_weight.h5'
+        #weights_path = 'weights/mrcnn_object_weight.h5'
+        weights_path = 'weights/mrcnn_object_weight_new.h5'
 
         # Load weights
         print("Loading weights ", weights_path)
@@ -185,14 +186,18 @@ class MRCNN_OBJECT(object):
         objects = []
         res = MRCNNDetectResponse()
 
-        res = MRCNNDetectResponse()
+        #res = MRCNNDetectResponse()
         h, w, num = masks.shape
         print (num)
         for i in range(num): 
             obj = Object2D()
 
             (ys, xs) = np.nonzero(masks[:,:,i])
-            mask = [ys[j] * WIDTH + xs[j] for j in range(len(ys))]
+            mask = [ys[j] * WIDTH + xs[j] for j in range(0, len(ys), 4)]
+            #''' for downsampled point cloud '''
+            #scale = 1
+            #mask = [int(ys[j]/scale * WIDTH /scale+ xs[j]/scale) for j in range(len(ys))]
+            #mask = list(set(mask))
             roi = (rois[i]).tolist()
             prob = (dists[i]).tolist()
 

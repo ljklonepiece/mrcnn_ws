@@ -123,7 +123,8 @@ class Observation_Label(object):
                 model_dir=DEFAULT_LOG_DIR)
 
         # Select weights file to load
-        weights_path = 'weights/mrcnn_object_weight.h5'
+        #weights_path = 'weights/mrcnn_object_weight.h5'
+        weights_path = 'weights/mrcnn_object_weight_new.h5'
 
         # Load weights
         print("Loading weights ", weights_path)
@@ -231,7 +232,8 @@ class Observation_Label(object):
                     
         print ('finished!')
 
-        with open('observation_model_10.json', 'w') as f:
+        #with open('observation_model_10.json', 'w') as f:
+        with open('observation_model_10_new.json', 'w') as f:
             json.dump(self.obs_dict, f, sort_keys=True, indent=4)
 
     def display(self, img):
