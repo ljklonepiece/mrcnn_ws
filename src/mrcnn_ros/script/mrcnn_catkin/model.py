@@ -825,7 +825,8 @@ class DetectionLayer(KE.Layer):
             detections_batch,
             #[self.config.BATCH_SIZE, self.config.DETECTION_MAX_INSTANCES, 6])
             ### 17 = 6 + 11 (11 classes including background)
-            [self.config.BATCH_SIZE, self.config.DETECTION_MAX_INSTANCES, 17]) 
+            [self.config.BATCH_SIZE, self.config.DETECTION_MAX_INSTANCES,
+                6+self.config.NUM_CLASSES]) 
 
     def compute_output_shape(self, input_shape):
         return (None, self.config.DETECTION_MAX_INSTANCES, 6)
