@@ -77,7 +77,7 @@ class ObjectConfig(Config):
     STEPS_PER_EPOCH = 100
 
     # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0.3
+    DETECTION_MIN_CONFIDENCE = 0.50
 
     '''customized setting'''
     IMAGE_MIN_DIM = 480
@@ -175,7 +175,7 @@ class MRCNN_OBJECT(object):
             with self.graph.as_default():
                 r = self.model.detect([cv_img], verbose=0)[0]
 
-            _, num_obj = self.filter(r['rois'], r['scores'])
+            _, num_obj = self.filter(r['rois'], r['scores'], r['class_ids'])
 
             if num_obj not in results_count.keys():
                 results_count[num_obj] = 1
@@ -224,12 +224,14 @@ class MRCNN_OBJECT(object):
 
         return res
 
-    def filter(self, rois, scores):
+    def filter(self, rois, scores, classes):
         overlap_roi = []
+        pixel_distance = 50
 
         for i, r1 in enumerate(rois):
             ## remove roi that is too small
             area = (r1[2] - r1[0]) * (r1[3] - r1[1])
+            center_i = [(r1[2] + r1[0]) / 2.0, (r1[3] + r1[1]) / 2.0]
             if area < 800:
                 print ('bbox is too SMALL')
                 overlap_roi.append(i)
@@ -239,27 +241,52 @@ class MRCNN_OBJECT(object):
                 overlap_roi.append(i)
                 continue
             for j, r2 in enumerate(rois):
+                remove = False
                 if i >= j:
                     continue
-                #print (r1, r2)
-                
+
                 dx = min(r1[3], r2[3]) - max(r1[1], r2[1])
                 dy = min(r1[2], r2[2]) - max(r1[0], r2[0])
 
                 if dx < 0 or dy < 0:
                     continue
 
-                area = 1.0 * dx * dy
                 rect1 = (r1[2] - r1[0]) * (r1[3] - r1[1])
                 rect2 = (r2[2] - r2[0]) * (r2[3] - r2[1])
+
+                center_j = [(r2[2] + r2[0]) / 2.0, (r2[3] + r2[1]) / 2.0]
+
+                dist = abs(center_i[0] - center_j[0]) + abs(center_i[1] - center_j[1])
+                ratio = 1.0 * rect1 / rect2
+
+                if dist < pixel_distance and 0.8 < ratio < 1.2:
+                    print ('$$$===================')
+                    print (classes[i])
+                    print (classes[j])
+                    print ('probably incorrect overlapping of rois')
+                    print ('distance: ', dist) 
+                    print ('ratio: ', ratio) 
+                    print ('===================')
+                    remove = True
+
+                if (not remove) and (not classes[i] == classes[j]):
+                    continue
+                else:
+                    print ('going to filter one of them: ')
+                    print (classes[i])
+                    print (classes[j])
+                #print (r1, r2)
+                
+
+                area = 1.0 * dx * dy
                 #overlap = (area / rect1 + area / rect2) * 0.5
                 overlap = max(area/rect1, area/rect2)
 
-                #print ('-----')
-                #print (overlap)
-                #print ('-----')
+                print ('-----')
+                print (overlap)
+                print ('-----')
 
-                if overlap > 0.50:
+                if overlap > 0.20:
                     ## need to prune one
                     if scores[i] > scores[j]:
                         overlap_roi.append(j)
@@ -316,7 +343,7 @@ class MRCNN_OBJECT(object):
         num_valid = len(rois) - len(overlap_roi)
         '''
 
-        overlap_roi, num_valid = self.filter(rois, scores)
+        overlap_roi, num_valid = self.filter(rois, scores, types)
 
         mask_f = np.ones((480, 640, num_valid) , dtype=bool)
         rois_f = []
