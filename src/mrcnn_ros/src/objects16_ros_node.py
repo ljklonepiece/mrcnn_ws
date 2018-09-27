@@ -226,7 +226,7 @@ class MRCNN_OBJECT(object):
 
     def filter(self, rois, scores, classes):
         overlap_roi = []
-        pixel_distance = 50
+        pixel_distance = 100
 
         for i, r1 in enumerate(rois):
             ## remove roi that is too small
@@ -257,9 +257,14 @@ class MRCNN_OBJECT(object):
                 center_j = [(r2[2] + r2[0]) / 2.0, (r2[3] + r2[1]) / 2.0]
 
                 dist = abs(center_i[0] - center_j[0]) + abs(center_i[1] - center_j[1])
-                ratio = 1.0 * rect1 / rect2
+                ratio = 1.0 * max(rect1, rect2) / min(rect1, rect2)
 
-                if dist < pixel_distance and 0.8 < ratio < 1.2:
+                print ('ratio===================')
+                print ('ratio: ', ratio)
+                print (classes[i])
+                print (classes[j])
+
+                if dist < pixel_distance and ratio < 1.5:
                     print ('$$$===================')
                     print (classes[i])
                     print (classes[j])

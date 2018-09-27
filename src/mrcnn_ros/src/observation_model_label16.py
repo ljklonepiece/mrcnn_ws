@@ -238,7 +238,7 @@ class Observation_Label(object):
                     #print (dist.shape)
 
                     ## store the result
-                    self.obs_dict[type_key][idx] += dist
+                    self.obs_dict[type_key][idx] += dist_norm
 
             self.obj_trial_count[type_key] += self.num_per_occl
 
